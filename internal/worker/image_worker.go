@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/domain"
-	"github.com/yokitheyo/wb_level_3_04/internal/dto"
+	"github.com/yokitheyo/imageprocessor/internal/domain"
+	"github.com/yokitheyo/imageprocessor/internal/dto"
 )
 
 // ImageWorker обрабатывает задачи из очереди

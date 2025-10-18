@@ -8,7 +8,7 @@ import (
 	"github.com/wb-go/wbf/dbpg"
 	"github.com/wb-go/wbf/retry"
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/domain"
+	"github.com/yokitheyo/imageprocessor/internal/domain"
 )
 
 type imageRepository struct {

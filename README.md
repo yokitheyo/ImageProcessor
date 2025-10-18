@@ -22,7 +22,7 @@ Service for asynchronous image processing with Kafka-based task queue. Supports 
 ## Quick Start
 ```bash
 # Clone repository
-git clone https://github.com/yokitheyo/wb_level_3_04.git
+git clone https://github.com/yokitheyo/imageprocessor.git
 cd wb_level_3_04
 
 # Start services

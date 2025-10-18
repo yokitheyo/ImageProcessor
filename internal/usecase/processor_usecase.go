@@ -8,9 +8,9 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/domain"
-	"github.com/yokitheyo/wb_level_3_04/internal/infrastructure/processor"
-	"github.com/yokitheyo/wb_level_3_04/internal/infrastructure/storage"
+	"github.com/yokitheyo/imageprocessor/internal/domain"
+	"github.com/yokitheyo/imageprocessor/internal/infrastructure/processor"
+	"github.com/yokitheyo/imageprocessor/internal/infrastructure/storage"
 )
 
 type ProcessorUsecase struct {

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/config"
+	"github.com/yokitheyo/imageprocessor/internal/config"
 )
 
 type localStorage struct {

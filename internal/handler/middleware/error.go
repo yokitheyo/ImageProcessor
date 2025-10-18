@@ -5,7 +5,7 @@ import (
 
 	"github.com/wb-go/wbf/ginext"
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/dto"
+	"github.com/yokitheyo/imageprocessor/internal/dto"
 )
 
 func ErrorHandlerMiddleware() ginext.HandlerFunc {

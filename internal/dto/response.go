@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/yokitheyo/wb_level_3_04/internal/domain"
+	"github.com/yokitheyo/imageprocessor/internal/domain"
 )
 
 type ImageResponse struct {

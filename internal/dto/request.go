@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/yokitheyo/wb_level_3_04/internal/domain"
+import "github.com/yokitheyo/imageprocessor/internal/domain"
 
 type UploadImageRequest struct {
 	ProcessingType string `form:"processing_type" binding:"required,oneof=resize thumbnail watermark"`

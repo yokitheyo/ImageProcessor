@@ -8,10 +8,10 @@ import (
 	wbfkafka "github.com/wb-go/wbf/kafka"
 	"github.com/wb-go/wbf/retry"
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/domain"
+	"github.com/yokitheyo/imageprocessor/internal/domain"
 
-	"github.com/yokitheyo/wb_level_3_04/internal/config"
-	"github.com/yokitheyo/wb_level_3_04/internal/dto"
+	"github.com/yokitheyo/imageprocessor/internal/config"
+	"github.com/yokitheyo/imageprocessor/internal/dto"
 )
 
 type Producer struct {

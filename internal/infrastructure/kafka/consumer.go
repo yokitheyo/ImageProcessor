@@ -9,8 +9,8 @@ import (
 	"github.com/wb-go/wbf/retry"
 	"github.com/wb-go/wbf/zlog"
 
-	"github.com/yokitheyo/wb_level_3_04/internal/config"
-	"github.com/yokitheyo/wb_level_3_04/internal/dto"
+	"github.com/yokitheyo/imageprocessor/internal/config"
+	"github.com/yokitheyo/imageprocessor/internal/dto"
 )
 
 type MessageHandler func(ctx context.Context, task *dto.ProcessImageRequest) error

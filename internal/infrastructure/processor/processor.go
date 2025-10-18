@@ -9,8 +9,8 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/config"
-	"github.com/yokitheyo/wb_level_3_04/internal/domain"
+	"github.com/yokitheyo/imageprocessor/internal/config"
+	"github.com/yokitheyo/imageprocessor/internal/domain"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"

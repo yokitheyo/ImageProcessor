@@ -12,15 +12,15 @@ import (
 
 	"github.com/wb-go/wbf/dbpg"
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/config"
-	infradatabase "github.com/yokitheyo/wb_level_3_04/internal/infrastructure/database"
-	"github.com/yokitheyo/wb_level_3_04/internal/infrastructure/kafka"
-	"github.com/yokitheyo/wb_level_3_04/internal/infrastructure/processor"
-	"github.com/yokitheyo/wb_level_3_04/internal/infrastructure/storage"
-	"github.com/yokitheyo/wb_level_3_04/internal/repository/postgres"
-	"github.com/yokitheyo/wb_level_3_04/internal/retry"
-	"github.com/yokitheyo/wb_level_3_04/internal/usecase"
-	"github.com/yokitheyo/wb_level_3_04/internal/worker"
+	"github.com/yokitheyo/imageprocessor/internal/config"
+	infradatabase "github.com/yokitheyo/imageprocessor/internal/infrastructure/database"
+	"github.com/yokitheyo/imageprocessor/internal/infrastructure/kafka"
+	"github.com/yokitheyo/imageprocessor/internal/infrastructure/processor"
+	"github.com/yokitheyo/imageprocessor/internal/infrastructure/storage"
+	"github.com/yokitheyo/imageprocessor/internal/repository/postgres"
+	"github.com/yokitheyo/imageprocessor/internal/retry"
+	"github.com/yokitheyo/imageprocessor/internal/usecase"
+	"github.com/yokitheyo/imageprocessor/internal/worker"
 )
 
 func splitAndTrim(s, sep string) []string {

@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/wb-go/wbf/zlog"
-	"github.com/yokitheyo/wb_level_3_04/internal/domain"
-	"github.com/yokitheyo/wb_level_3_04/internal/infrastructure/storage"
+	"github.com/yokitheyo/imageprocessor/internal/domain"
+	"github.com/yokitheyo/imageprocessor/internal/infrastructure/storage"
 )
 
 type ImageUsecase struct {
