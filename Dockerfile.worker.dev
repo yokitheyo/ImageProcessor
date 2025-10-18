@@ -1,0 +1,17 @@
+FROM golang:1.25.0-alpine
+
+WORKDIR /app
+
+RUN mkdir -p /app/storage/original /app/storage/processed
+
+RUN apk add --no-cache git && \
+    go install github.com/air-verse/air@latest
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN ls -la /app/config.yaml || echo "config.yaml not found"
+
+CMD ["air", "-c", ".air.toml.worker"]
