@@ -51,7 +51,6 @@ func (h *ImageHandler) UploadImage(c *ginext.Context) {
 	}
 	defer file.Close()
 
-	// Проверяем размер файла
 	if header.Size > h.maxUploadSize {
 		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
 			Error:   "file_too_large",
@@ -60,7 +59,6 @@ func (h *ImageHandler) UploadImage(c *ginext.Context) {
 		return
 	}
 
-	// Проверяем формат файла
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if !h.isAllowedFormat(ext) {
 		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
@@ -70,13 +68,11 @@ func (h *ImageHandler) UploadImage(c *ginext.Context) {
 		return
 	}
 
-	// Получаем тип обработки
 	processingType := c.PostForm("processing_type")
 	if processingType == "" {
-		processingType = "resize" // По умолчанию
+		processingType = "resize"
 	}
 
-	// Валидируем тип обработки
 	var pt domain.ProcessingType
 	switch processingType {
 	case "resize":
@@ -93,13 +89,11 @@ func (h *ImageHandler) UploadImage(c *ginext.Context) {
 		return
 	}
 
-	// Определяем MIME type
 	mimeType := header.Header.Get("Content-Type")
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
 
-	// Загружаем изображение
 	image, err := h.service.UploadImage(
 		c.Request.Context(),
 		header.Filename,
@@ -118,7 +112,6 @@ func (h *ImageHandler) UploadImage(c *ginext.Context) {
 		return
 	}
 
-	// Формируем базовый URL
 	baseURL := h.getBaseURL(c)
 	response := dto.MapImageToResponse(image, baseURL)
 
@@ -154,10 +147,8 @@ func (h *ImageHandler) GetProcessedImage(c *ginext.Context) {
 	}
 	defer file.Close()
 
-	// Определяем Content-Type по расширению
 	contentType := h.getContentType(filename)
 
-	// Устанавливаем Content-Length
 	if stat, err := file.(interface{ Stat() (os.FileInfo, error) }).Stat(); err == nil {
 		c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
 	} else {
@@ -213,10 +204,8 @@ func (h *ImageHandler) GetOriginalImage(c *ginext.Context) {
 	}
 	defer file.Close()
 
-	// Определяем Content-Type по расширению
 	contentType := h.getContentType(filename)
 
-	// Устанавливаем Content-Length
 	if stat, err := file.(interface{ Stat() (os.FileInfo, error) }).Stat(); err == nil {
 		c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
 	} else {

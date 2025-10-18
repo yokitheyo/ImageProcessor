@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/viper"
+	"github.com/wb-go/wbf/config"
 	"github.com/wb-go/wbf/zlog"
 )
 
@@ -50,7 +50,7 @@ type KafkaConfig struct {
 }
 
 type StorageConfig struct {
-	Type         string `mapstructure:"type"` // local or s3
+	Type         string `mapstructure:"type"`
 	LocalPath    string `mapstructure:"local_path"`
 	OriginalDir  string `mapstructure:"original_dir"`
 	ProcessedDir string `mapstructure:"processed_dir"`
@@ -79,45 +79,92 @@ type LoggingConfig struct {
 }
 
 func Load(path string) (*Config, error) {
-	v := viper.New()
-	v.SetConfigType("yaml")
+	cfg := config.New()
 
-	// Если путь не указан, ищем стандартные места
-	if path == "" {
+	configPath := path
+	if configPath == "" {
 		if _, err := os.Stat("config.yaml"); err == nil {
-			path = "config.yaml"
+			configPath = "config.yaml"
 		} else if _, err := os.Stat("/app/config.yaml"); err == nil {
-			path = "/app/config.yaml"
+			configPath = "/app/config.yaml"
 		} else {
-			zlog.Logger.Fatal().Msg("No config.yaml found")
+			return nil, fmt.Errorf("config.yaml not found")
 		}
 	}
 
-	v.SetConfigFile(path)
-	if err := v.ReadInConfig(); err != nil {
-		zlog.Logger.Fatal().Err(err).Msg("failed to read config")
-	}
-	fmt.Println("Loaded config from:", path)
+	setDefaults(cfg)
 
-	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		zlog.Logger.Fatal().Err(err).Msg("failed to unmarshal config")
+	envPath := ".env"
+	if _, err := os.Stat(envPath); os.IsNotExist(err) {
+		envPath = ""
 	}
 
-	// Валидация
-	if err := validateConfig(&cfg); err != nil {
-		zlog.Logger.Fatal().Err(err).Msg("config validation failed")
+	if err := cfg.Load(configPath, envPath, "APP"); err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	appConfig := &Config{}
+	if err := cfg.Unmarshal(appConfig); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	if err := validateConfig(appConfig); err != nil {
+		return nil, fmt.Errorf("config validation failed: %w", err)
 	}
 
 	zlog.Logger.Info().
-		Str("local_path", cfg.Storage.LocalPath).
-		Str("original_dir", cfg.Storage.OriginalDir).
-		Str("processed_dir", cfg.Storage.ProcessedDir).
-		Int("resize_width", cfg.Processing.ResizeWidth).
-		Int("resize_height", cfg.Processing.ResizeHeight).
-		Msg("Config loaded successfully")
+		Str("local_path", appConfig.Storage.LocalPath).
+		Str("original_dir", appConfig.Storage.OriginalDir).
+		Str("processed_dir", appConfig.Storage.ProcessedDir).
+		Int("resize_width", appConfig.Processing.ResizeWidth).
+		Int("resize_height", appConfig.Processing.ResizeHeight).
+		Msg("Config loaded successfully via wbf")
 
-	return &cfg, nil
+	return appConfig, nil
+}
+
+func setDefaults(cfg *config.Config) {
+	// Server
+	cfg.SetDefault("server.addr", ":8080")
+	cfg.SetDefault("server.shutdown_timeout_sec", 15)
+	cfg.SetDefault("server.read_timeout_sec", 30)
+	cfg.SetDefault("server.write_timeout_sec", 30)
+	cfg.SetDefault("server.max_upload_size_mb", 10)
+
+	// Database
+	cfg.SetDefault("database.max_open_conns", 25)
+	cfg.SetDefault("database.max_idle_conns", 5)
+	cfg.SetDefault("database.conn_max_lifetime_sec", 1800)
+	cfg.SetDefault("database.connect_retries", 10)
+	cfg.SetDefault("database.connect_retry_delay_sec", 3)
+
+	// Migrations
+	cfg.SetDefault("migrations.path", "./migrations")
+
+	// Kafka
+	cfg.SetDefault("kafka.topic", "image-processing")
+	cfg.SetDefault("kafka.group_id", "image-processor-workers")
+	cfg.SetDefault("kafka.partition", 0)
+	cfg.SetDefault("kafka.session_timeout_sec", 30)
+	cfg.SetDefault("kafka.heartbeat_interval_sec", 3)
+
+	// Storage
+	cfg.SetDefault("storage.type", "local")
+	cfg.SetDefault("storage.local_path", "./storage")
+	cfg.SetDefault("storage.original_dir", "original")
+	cfg.SetDefault("storage.processed_dir", "processed")
+
+	// Processing
+	cfg.SetDefault("processing.resize_width", 800)
+	cfg.SetDefault("processing.resize_height", 600)
+	cfg.SetDefault("processing.thumbnail_width", 200)
+	cfg.SetDefault("processing.thumbnail_height", 150)
+	cfg.SetDefault("processing.watermark_opacity", 128)
+	cfg.SetDefault("processing.output_quality", 95)
+	cfg.SetDefault("processing.supported_formats", []string{"jpg", "jpeg", "png", "gif"})
+
+	// Logging
+	cfg.SetDefault("logging.level", "info")
 }
 
 func validateConfig(cfg *Config) error {
@@ -136,6 +183,5 @@ func validateConfig(cfg *Config) error {
 	if cfg.Processing.ThumbnailHeight <= 0 {
 		return fmt.Errorf("processing.thumbnail_height must be positive")
 	}
-	// Добавьте другие проверки по необходимости
 	return nil
 }

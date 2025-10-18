@@ -55,6 +55,26 @@ services:
       - imageprocessor_network
     restart: unless-stopped
 
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: imageprocessor_kafka_init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        echo '⏳ Waiting for Kafka to be ready...'
+        sleep 10
+        echo '📝 Creating topic image-processing...'
+        kafka-topics --create --if-not-exists --topic image-processing --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1
+        echo '✅ Topic created successfully!'
+        echo '📋 List of all topics:'
+        kafka-topics --list --bootstrap-server kafka:9092
+        echo '🎉 Kafka initialization complete!'
+    networks:
+      - imageprocessor_network
+
   kafdrop:
     image: obsidiandynamics/kafdrop
     container_name: kafdrop
@@ -83,9 +103,9 @@ services:
     environment:
       - DATABASE_DSN=postgres://postgres:postgres@db:5432/imageprocessor?sslmode=disable
       - KAFKA_BROKERS=kafka:9092
-      - LOCAL_PATH=/app/storage          # <- добавили путь для storage
+      - LOCAL_PATH=/app/storage
     volumes:
-      - ./storage:/app/storage           # <- локальная папка storage смонтирована
+      - ./storage:/app/storage
       - ./static:/app/static
     networks:
       - imageprocessor_network
@@ -105,7 +125,7 @@ services:
     environment:
       - DATABASE_DSN=postgres://postgres:postgres@db:5432/imageprocessor?sslmode=disable
       - KAFKA_BROKERS=kafka:9092
-      - LOCAL_PATH=/app/storage          # <- путь для storage
+      - LOCAL_PATH=/app/storage
     volumes:
       - ./storage:/app/storage
     networks:
