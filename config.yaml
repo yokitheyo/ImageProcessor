@@ -1,0 +1,63 @@
+server:
+  addr: ":8080"
+  shutdown_timeout_sec: 15
+  read_timeout_sec: 30
+  write_timeout_sec: 30
+  max_upload_size_mb: 10
+
+database:
+  dsn: "postgres://postgres:postgres@db:5432/imageprocessor?sslmode=disable"
+  slaves: ""
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime_sec: 1800
+  connect_retries: 20
+  connect_retry_delay_sec: 5
+
+migrations:
+  path: "./migrations"
+
+kafka:
+  brokers:
+    - kafka:9092
+  topic: "image-processing"
+  group_id: "image-processor-workers"
+  partition: 0
+  session_timeout_sec: 30
+  heartbeat_interval_sec: 3
+  sasl_mechanism: "" # Например, "PLAIN" или ""
+  sasl_username: ""
+  sasl_password: ""
+  security_protocol: "PLAINTEXT" # Или "SASL_SSL"
+
+
+storage:
+  type: "local"  # local or s3
+  local_path: "/app/storage"
+  original_dir: "original"
+  processed_dir: "processed"
+
+  # S3 config (если type = s3)
+  s3_endpoint: ""
+  s3_access_key: ""
+  s3_secret_key: ""
+  s3_bucket: "images"
+  s3_region: "us-east-1"
+  s3_use_ssl: true
+
+processing:
+  resize_width: 800
+  resize_height: 600
+  thumbnail_width: 200
+  thumbnail_height: 150
+  watermark_text: "© ImageProcessor"
+  watermark_opacity: 128
+  output_quality: 95
+  supported_formats:
+    - jpg
+    - jpeg
+    - png
+    - gif
+
+logging:
+  level: "info"
