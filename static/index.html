@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImageProcessor - Обработка изображений</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <header class="header">
+        <h1>🖼️ ImageProcessor</h1>
+        <p>Загрузите изображение и выберите тип обработки</p>
+    </header>
+
+    <!-- Форма загрузки -->
+    <div class="upload-section">
+        <div class="upload-card">
+            <h2>Загрузить изображение</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="file-input-wrapper">
+                    <input
+                            type="file"
+                            id="imageFile"
+                            name="image"
+                            accept="image/jpeg,image/png,image/gif"
+                            required
+                    >
+                    <label for="imageFile" class="file-label">
+                        <span id="fileName">Выберите файл</span>
+                        <span class="file-button">Обзор</span>
+                    </label>
+                </div>
+
+                <div class="processing-type">
+                    <label>Тип обработки:</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="processing_type" value="resize" checked>
+                            <span>🔄 Resize (800x600)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="processing_type" value="thumbnail">
+                            <span>🖼️ Thumbnail (200x150)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="processing_type" value="watermark">
+                            <span>💧 Watermark</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="upload-btn" id="uploadBtn">
+                    Загрузить и обработать
+                </button>
+            </form>
+
+            <div id="uploadProgress" class="progress-bar" style="display: none;">
+                <div class="progress-fill"></div>
+                <span class="progress-text">Загрузка...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список изображений -->
+    <div class="images-section">
+        <div class="section-header">
+            <h2>Мои изображения</h2>
+            <button id="refreshBtn" class="refresh-btn">🔄 Обновить</button>
+        </div>
+
+        <div id="imagesContainer" class="images-grid">
+            <div class="loading" id="loading">Загрузка...</div>
+        </div>
+
+        <div class="pagination">
+            <button id="prevBtn" class="page-btn" disabled>← Назад</button>
+            <span id="pageInfo" class="page-info">Страница 1</span>
+            <button id="nextBtn" class="page-btn">Вперёд →</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра изображения -->
+<div id="imageModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <div class="modal-body">
+            <img id="modalImage" src="" alt="Image">
+            <div class="modal-info">
+                <h3 id="modalTitle"></h3>
+                <div class="modal-details">
+                    <p><strong>Статус:</strong> <span id="modalStatus" class="status-badge"></span></p>
+                    <p><strong>Размер:</strong> <span id="modalSize"></span></p>
+                    <p><strong>Тип обработки:</strong> <span id="modalProcessing"></span></p>
+                    <p><strong>Загружено:</strong> <span id="modalDate"></span></p>
+                </div>
+                <div class="modal-actions">
+                    <a id="downloadOriginal" class="action-btn" download>📥 Оригинал</a>
+                    <a id="downloadProcessed" class="action-btn" download>📥 Обработанное</a>
+                    <button id="deleteBtn" class="action-btn delete-btn">🗑️ Удалить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/scripts.js"></script>
+</body>
+</html>
