@@ -22,7 +22,7 @@ Service for asynchronous image processing with Kafka-based task queue. Supports 
 
 Resize image                     | Thumbnail image                            | Watermark image
 -----------------------------------|----------------------------------------|---------------------------------------
-![srcImage](C:\progs\wb_level_3_4\test_data\resize.jpg) | ![dstImage](testdata/thumbnail.jpg) | ![dstImage](testdata/watermark.jpg)
+![srcImage](test_data/resize.jpg) | ![dstImage](test_data/thumbnail.jpg) | ![dstImage](test_data/watermark.jpg)
 
 ## Quick Start
 ```bash
@@ -73,6 +73,40 @@ open http://localhost:8080
 └── docker-compose.yml
 ```
 
+## Configuration
+
+Edit `config.yaml` to customize:
+```yaml
+processing:
+  resize_width: 800
+  resize_height: 600
+  thumbnail_width: 200
+  thumbnail_height: 150
+  watermark_text: "© ImageProcessor"
+  watermark_opacity: 128
+```
+
+## Development
+```bash
+# Single Dockerfile
+
+This project was simplified to use a single parameterized `Dockerfile` (at repository root) and a single `docker-compose.yml`.
+
+The `Dockerfile` supports both services (`api` and `worker`) and two modes via build args:
+
+- APP: api|worker (which binary to build)
+- MODE: dev|prod (dev uses the golang image and runs `go run`, prod uses an alpine runtime and runs the compiled binary)
+
+Examples:
+
+```bash
+# Development (default): compose will build with MODE=dev
+docker compose up -d
+
+# Production-style image build (example):
+docker build --build-arg APP=api --build-arg MODE=prod --build-arg BASE_IMAGE=alpine:latest -t imageprocessor_api .
+``` 
+
 
 # View logs
 docker logs -f imageprocessor_api
@@ -83,6 +117,7 @@ docker-compose down
 ```
 
 ## Architecture
+
 ```
 ┌─────────┐      ┌─────────┐      ┌──────────┐
 │ Client  │─────▶│   API   │─────▶│ Postgres │
@@ -97,4 +132,5 @@ docker-compose down
                  ┌────────┐      ┌─────────┐
                  │ Worker │─────▶│ Storage │
                  └────────┘      └─────────┘
+
 ```
