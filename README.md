@@ -82,10 +82,10 @@ docker logs -f imageprocessor_worker
 docker-compose down
 ```
 
-## Architecture
-
+# Architecture
+```
 ┌─────────┐      ┌─────────┐      ┌──────────┐
-│ Client  │────▶│   API    │────▶│ Postgres │
+│ Client  │ ────▶│   API   │ ────▶│ Postgres │
 └─────────┘      └─────────┘      └──────────┘
                       │
                       ▼
