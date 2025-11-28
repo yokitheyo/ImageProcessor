@@ -19,7 +19,6 @@ type Producer struct {
 	topic  string
 }
 
-// NewProducer создаёт Kafka producer через wbf.
 func NewProducer(cfg *config.KafkaConfig) *Producer {
 	client := wbfkafka.NewProducer(cfg.Brokers, cfg.Topic)
 	zlog.Logger.Info().
@@ -32,7 +31,6 @@ func NewProducer(cfg *config.KafkaConfig) *Producer {
 	}
 }
 
-// Send отправляет сообщение без ретраев.
 func (p *Producer) Send(ctx context.Context, task dto.ProcessImageRequest) error {
 	data, err := json.Marshal(task)
 	if err != nil {
@@ -58,7 +56,6 @@ func (p *Producer) Send(ctx context.Context, task dto.ProcessImageRequest) error
 	return nil
 }
 
-// SendWithRetry — с повторными попытками через стратегию.
 func (p *Producer) SendWithRetry(ctx context.Context, task dto.ProcessImageRequest) error {
 	data, err := json.Marshal(task)
 	if err != nil {
@@ -72,7 +69,7 @@ func (p *Producer) SendWithRetry(ctx context.Context, task dto.ProcessImageReque
 	strategy := retry.Strategy{
 		Attempts: 3,
 		Delay:    2 * time.Second,
-		Backoff:  2.0, // Увеличен для экспоненциальной задержки
+		Backoff:  2.0,
 	}
 	if err := p.client.SendWithRetry(ctx, strategy, nil, data); err != nil {
 		zlog.Logger.Error().
@@ -89,7 +86,6 @@ func (p *Producer) SendWithRetry(ctx context.Context, task dto.ProcessImageReque
 	return nil
 }
 
-// Close закрывает продюсер.
 func (p *Producer) Close() error {
 	if err := p.client.Close(); err != nil {
 		zlog.Logger.Error().Err(err).Msg("Failed to close Kafka producer")
@@ -104,5 +100,5 @@ func (p *Producer) PublishProcessingTask(ctx context.Context, imageID string, pr
 		ImageID:        imageID,
 		ProcessingType: string(processingType),
 	}
-	return p.SendWithRetry(ctx, task) // Используем SendWithRetry для надёжности
+	return p.SendWithRetry(ctx, task)
 }

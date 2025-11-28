@@ -19,14 +19,19 @@ Service for asynchronous image processing with Kafka-based task queue. Supports 
 - **Docker** - Containerization
 - **WBF Framework** - Configuration and utilities
 
+
+Resize image                     | Thumbnail image                            | Watermark image
+-----------------------------------|----------------------------------------|---------------------------------------
+![srcImage](C:\progs\wb_level_3_4\test_data\resize.jpg) | ![dstImage](testdata/thumbnail.jpg) | ![dstImage](testdata/watermark.jpg)
+
 ## Quick Start
 ```bash
 # Clone repository
 git clone https://github.com/yokitheyo/imageprocessor.git
 cd wb_level_3_04
 
-# Start services
-docker-compose up -d
+# Start services (dev-mode, default)
+docker compose up -d
 
 # Access web UI
 open http://localhost:8080
@@ -68,23 +73,6 @@ open http://localhost:8080
 └── docker-compose.yml
 ```
 
-## Configuration
-
-Edit `config.yaml` to customize:
-```yaml
-processing:
-  resize_width: 800
-  resize_height: 600
-  thumbnail_width: 200
-  thumbnail_height: 150
-  watermark_text: "© ImageProcessor"
-  watermark_opacity: 128
-```
-
-## Development
-```bash
-# Start with hot reload
-docker-compose up
 
 # View logs
 docker logs -f imageprocessor_api

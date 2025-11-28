@@ -6,6 +6,7 @@ import (
 	"io"
 	"path/filepath"
 	"time"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/wb-go/wbf/zlog"
@@ -100,6 +101,9 @@ func (u *ImageUsecase) GetImageFile(ctx context.Context, id string, useOriginal 
 		filename = image.OriginalFilename
 		if err != nil {
 			zlog.Logger.Error().Err(err).Str("image_id", id).Str("path", image.OriginalPath).Msg("failed to get original file")
+			if errors.Is(err, storage.ErrObjectNotFound) {
+				return nil, "", domain.ErrImageNotFound
+			}
 		}
 	} else {
 		if !image.IsProcessed() {
@@ -109,6 +113,9 @@ func (u *ImageUsecase) GetImageFile(ctx context.Context, id string, useOriginal 
 		file, err = u.storage.GetProcessed(ctx, image.ProcessedPath)
 		if err != nil {
 			zlog.Logger.Error().Err(err).Str("image_id", id).Str("path", image.ProcessedPath).Msg("failed to get processed file")
+			if errors.Is(err, storage.ErrObjectNotFound) {
+				return nil, "", domain.ErrImageNotFound
+			}
 			return nil, "", err
 		}
 

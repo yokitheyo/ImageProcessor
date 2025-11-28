@@ -21,7 +21,6 @@ type Consumer struct {
 	topic   string
 }
 
-// NewConsumer создаёт Kafka consumer через WB
 func NewConsumer(cfg *config.KafkaConfig, handler MessageHandler) (*Consumer, error) {
 	client := wbfkafka.NewConsumer(cfg.Brokers, cfg.Topic, cfg.GroupID)
 
@@ -38,13 +37,11 @@ func NewConsumer(cfg *config.KafkaConfig, handler MessageHandler) (*Consumer, er
 	}, nil
 }
 
-// Start запускает потребление сообщений через WB
 func (c *Consumer) Start(ctx context.Context) error {
-	// retry стратегия
 	strategy := retry.Strategy{
 		Attempts: 3,
 		Delay:    2 * time.Second,
-		Backoff:  2.0, // Экспоненциальный backoff
+		Backoff:  2.0,
 	}
 
 	for {
@@ -69,7 +66,6 @@ func (c *Consumer) Start(ctx context.Context) error {
 				continue
 			}
 
-			// Валидация задачи
 			if task.ImageID == "" || task.ProcessingType == "" {
 				zlog.Logger.Error().
 					Str("image_id", task.ImageID).
@@ -108,7 +104,6 @@ func (c *Consumer) Start(ctx context.Context) error {
 	}
 }
 
-// Close закрывает consumer
 func (c *Consumer) Close() error {
 	if err := c.client.Close(); err != nil {
 		zlog.Logger.Error().Err(err).Msg("Failed to close Kafka consumer")

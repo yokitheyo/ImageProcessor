@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"errors"
 
 	"github.com/wb-go/wbf/zlog"
 	"github.com/yokitheyo/imageprocessor/internal/config"
@@ -23,11 +24,16 @@ func New(cfg *config.StorageConfig) (Storage, error) {
 	case "local":
 		zlog.Logger.Info().Msg("Initializing local storage")
 		return NewLocalStorage(cfg)
-	/*	case "s3":
+	case "s3":
 		zlog.Logger.Info().Msg("Initializing S3 storage")
-		return NewS3Storage(cfg)*/
+		return NewS3Storage(cfg)
 	default:
 		zlog.Logger.Error().Str("type", cfg.Type).Msg("Unsupported storage type, use 'local' or 's3'")
 		return nil, fmt.Errorf("unsupported storage type: %s", cfg.Type)
 	}
 }
+
+// ErrObjectNotFound -- sentinel error returned by storage implementations
+// when an object (original/processed) cannot be found in the underlying
+// storage. Callers should use errors.Is(err, ErrObjectNotFound) to check.
+var ErrObjectNotFound = errors.New("storage: object not found")

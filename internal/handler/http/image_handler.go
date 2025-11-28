@@ -37,9 +37,8 @@ func (h *ImageHandler) RegisterRoutes(engine *ginext.Engine) {
 	engine.GET("/images", h.ListImages)
 }
 
-// UploadImage POST /upload
+// POST /upload
 func (h *ImageHandler) UploadImage(c *ginext.Context) {
-	// Получаем файл из формы
 	file, header, err := c.Request.FormFile("image")
 	if err != nil {
 		zlog.Logger.Warn().Err(err).Msg("failed to get file from request")
@@ -118,7 +117,7 @@ func (h *ImageHandler) UploadImage(c *ginext.Context) {
 	c.JSON(http.StatusCreated, response)
 }
 
-// GetProcessedImage GET /image/:id
+// GET /image/:id
 func (h *ImageHandler) GetProcessedImage(c *ginext.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -149,10 +148,12 @@ func (h *ImageHandler) GetProcessedImage(c *ginext.Context) {
 
 	contentType := h.getContentType(filename)
 
-	if stat, err := file.(interface{ Stat() (os.FileInfo, error) }).Stat(); err == nil {
-		c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
+	if v, ok := file.(interface{ Stat() (os.FileInfo, error) }); ok {
+		if stat, err := v.Stat(); err == nil {
+			c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
+		}
 	} else {
-		zlog.Logger.Warn().Err(err).Str("image_id", id).Str("filename", filename).Msg("failed to get file size")
+		zlog.Logger.Debug().Str("image_id", id).Str("filename", filename).Msg("file does not implement Stat(os.FileInfo); skipping Content-Length header")
 	}
 
 	c.Header("Content-Type", contentType)
@@ -175,7 +176,7 @@ func (h *ImageHandler) GetProcessedImage(c *ginext.Context) {
 		Msg("processed image sent successfully")
 }
 
-// GetOriginalImage GET /image/:id/original
+// GET /image/:id/original
 func (h *ImageHandler) GetOriginalImage(c *ginext.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -206,10 +207,12 @@ func (h *ImageHandler) GetOriginalImage(c *ginext.Context) {
 
 	contentType := h.getContentType(filename)
 
-	if stat, err := file.(interface{ Stat() (os.FileInfo, error) }).Stat(); err == nil {
-		c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
+	if v, ok := file.(interface{ Stat() (os.FileInfo, error) }); ok {
+		if stat, err := v.Stat(); err == nil {
+			c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
+		}
 	} else {
-		zlog.Logger.Warn().Err(err).Str("image_id", id).Str("filename", filename).Msg("failed to get file size")
+		zlog.Logger.Debug().Str("image_id", id).Str("filename", filename).Msg("file does not implement Stat(os.FileInfo); skipping Content-Length header")
 	}
 
 	c.Header("Content-Type", contentType)
@@ -232,7 +235,7 @@ func (h *ImageHandler) GetOriginalImage(c *ginext.Context) {
 		Msg("original image sent successfully")
 }
 
-// DeleteImage DELETE /image/:id
+// DELETE image/:id
 func (h *ImageHandler) DeleteImage(c *ginext.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -262,9 +265,8 @@ func (h *ImageHandler) DeleteImage(c *ginext.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// ListImages GET /images
+// GET /images
 func (h *ImageHandler) ListImages(c *ginext.Context) {
-	// Получаем параметры пагинации
 	limit := 10
 	if l := c.Query("limit"); l != "" {
 		if val, err := strconv.Atoi(l); err == nil && val > 0 {
@@ -294,8 +296,6 @@ func (h *ImageHandler) ListImages(c *ginext.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
-
-// Helper methods
 
 func (h *ImageHandler) isAllowedFormat(ext string) bool {
 	ext = strings.TrimPrefix(ext, ".")

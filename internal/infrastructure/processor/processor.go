@@ -4,20 +4,18 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
 	"io"
+	"math"
 
 	"github.com/disintegration/imaging"
 	"github.com/wb-go/wbf/zlog"
 	"github.com/yokitheyo/imageprocessor/internal/config"
 	"github.com/yokitheyo/imageprocessor/internal/domain"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
 )
 
 type ImageProcessor struct {
-	cfg *config.ProcessingConfig
+	cfg          *config.ProcessingConfig
+	watermarkImg image.Image
 }
 
 func NewImageProcessor(cfg *config.ProcessingConfig) *ImageProcessor {
@@ -44,8 +42,21 @@ func NewImageProcessor(cfg *config.ProcessingConfig) *ImageProcessor {
 		Int("thumbnail_height", cfg.ThumbnailHeight).
 		Int("output_quality", cfg.OutputQuality).
 		Str("watermark_text", cfg.WatermarkText).
+		Str("watermark_image", cfg.WatermarkImage).
 		Msg("ImageProcessor initialized")
-	return &ImageProcessor{cfg: cfg}
+	p := &ImageProcessor{cfg: cfg}
+
+	if cfg.WatermarkImage != "" {
+		img, err := imaging.Open(cfg.WatermarkImage)
+		if err != nil {
+			zlog.Logger.Warn().Err(err).Str("watermark_image", cfg.WatermarkImage).Msg("failed to load watermark image, falling back to text watermarking")
+		} else {
+			p.watermarkImg = img
+			zlog.Logger.Info().Int("watermark_img_width", img.Bounds().Dx()).Int("watermark_img_height", img.Bounds().Dy()).Msg("Loaded watermark image")
+		}
+	}
+
+	return p
 }
 
 func (p *ImageProcessor) ResizeWidth() int {
@@ -162,91 +173,66 @@ func (p *ImageProcessor) thumbnail(img image.Image) image.Image {
 }
 
 func (p *ImageProcessor) watermark(img image.Image) image.Image {
-	if p.cfg.WatermarkText == "" {
-		zlog.Logger.Warn().Msg("Watermark text is empty, returning original image")
-		return img
-	}
+	if p.watermarkImg != nil {
+		bounds := img.Bounds()
+		width := bounds.Dx()
+		height := bounds.Dy()
 
-	bounds := img.Bounds()
-	width := bounds.Dx()
-	height := bounds.Dy()
+		out := imaging.Clone(img)
 
-	rgba := image.NewRGBA(bounds)
-	draw.Draw(rgba, bounds, img, bounds.Min, draw.Src)
+		wm := p.watermarkImg
+		wmBounds := wm.Bounds()
+		wmW := wmBounds.Dx()
+		wmH := wmBounds.Dy()
 
-	// КРАСНЫЙ цвет с прозрачностью
-	opacity := uint8(float64(p.cfg.WatermarkOpacity) * 255.0 / 100.0)
-	red := color.RGBA{255, 0, 0, opacity}
-
-	face := basicfont.Face7x13
-
-	// ОГРОМНЫЙ масштаб
-	scale := 10 // каждая буква будет 10x10 пикселей вместо 1x1
-
-	textLen := len(p.cfg.WatermarkText)
-	scaledWidth := textLen * 7 * scale
-	scaledHeight := 13 * scale
-
-	// Расстояние между водяными знаками
-	stepX := scaledWidth + 200
-	stepY := scaledHeight + 150
-
-	// Рисуем по всему изображению
-	for row := -1; row*stepY < height+scaledHeight; row++ {
-		for col := -1; col*stepX < width+scaledWidth; col++ {
-			x := col * stepX
-			y := row * stepY
-
-			// Шахматный порядок
-			if row%2 == 1 {
-				x += stepX / 2
-			}
-
-			// Рисуем текст увеличенным
-			drawLargeText(rgba, p.cfg.WatermarkText, x, y, scale, red, face)
+		if wmW == 0 || wmH == 0 {
+			zlog.Logger.Warn().Msg("watermark image has zero size, returning original image")
+			return img
 		}
-	}
 
-	zlog.Logger.Info().
-		Str("text", p.cfg.WatermarkText).
-		Int("opacity", p.cfg.WatermarkOpacity).
-		Int("scale", scale).
-		Str("color", "RED").
-		Msg("HUGE RED watermark applied")
-
-	return rgba
-}
-
-func drawLargeText(dst *image.RGBA, text string, x, y, scale int, col color.Color, face font.Face) {
-	tempWidth := len(text) * 10
-	tempHeight := 20
-	temp := image.NewRGBA(image.Rect(0, 0, tempWidth, tempHeight))
-
-	drawer := &font.Drawer{
-		Dst:  temp,
-		Src:  image.NewUniform(color.White),
-		Face: face,
-		Dot:  fixed.Point26_6{X: 0, Y: fixed.Int26_6(13 * 64)},
-	}
-	drawer.DrawString(text)
-
-	bounds := dst.Bounds()
-	for sy := 0; sy < tempHeight; sy++ {
-		for sx := 0; sx < tempWidth; sx++ {
-			c := temp.At(sx, sy)
-			if c != (color.RGBA{0, 0, 0, 0}) {
-				for dy := 0; dy < scale; dy++ {
-					for dx := 0; dx < scale; dx++ {
-						px := x + sx*scale + dx
-						py := y + sy*scale + dy
-						if px >= 0 && px < bounds.Dx() && py >= 0 && py < bounds.Dy() {
-							dst.Set(px, py, col)
-						}
-					}
-				}
-			}
+		opacity := float64(p.cfg.WatermarkOpacity) / 255.0
+		if opacity < 0 {
+			opacity = 0
 		}
+		if opacity > 1 {
+			opacity = 1
+		}
+
+		targetWidth := width / 4
+		if targetWidth < 10 {
+			targetWidth = 10
+		}
+		wmScaled := imaging.Resize(wm, targetWidth, 0, imaging.Lanczos)
+
+		wmRot := imaging.Rotate(wmScaled, -45, color.NRGBA{0, 0, 0, 0})
+		rotW := wmRot.Bounds().Dx()
+		rotH := wmRot.Bounds().Dy()
+
+		diagLen := int(math.Hypot(float64(width), float64(height))) + rotW
+		spacing := rotW/2 + 20
+		if spacing < 10 {
+			spacing = 10
+		}
+		step := rotW + spacing
+		count := diagLen/step + 2
+		if count < 1 {
+			count = 1
+		}
+
+		for i := 0; i <= count; i++ {
+			t := float64(i) / float64(count)
+			posX := int((1.0-t)*float64(-rotW) + t*float64(width))
+			posY := int((1.0-t)*float64(-rotH) + t*float64(height))
+			out = imaging.Overlay(out, wmRot, image.Pt(posX, posY), opacity)
+		}
+
+		zlog.Logger.Info().Str("watermark", p.cfg.WatermarkImage).Int("opacity", p.cfg.WatermarkOpacity).Msg("Image watermark applied (diagonal image-only)")
+
+		return out
 	}
+
+	zlog.Logger.Warn().Msg("No image watermark configured — image watermarking is required. Returning original image (no text watermark)")
+	return img
 }
 
 func GetImageDimensions(img image.Image) (width, height int) {

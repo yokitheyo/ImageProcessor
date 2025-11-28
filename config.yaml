@@ -25,32 +25,32 @@ kafka:
   partition: 0
   session_timeout_sec: 30
   heartbeat_interval_sec: 3
-  sasl_mechanism: "" # Например, "PLAIN" или ""
+  sasl_mechanism: "" # e.g. "PLAIN" or empty
   sasl_username: ""
   sasl_password: ""
-  security_protocol: "PLAINTEXT" # Или "SASL_SSL"
+  security_protocol: "PLAINTEXT" # or "SASL_SSL"
 
 
 storage:
-  type: "local"  # local or s3
+  # Choose storage type: "local" or "s3".
+  type: "s3"
   local_path: "/app/storage"
   original_dir: "original"
   processed_dir: "processed"
 
-  # S3 config (если type = s3)
-  s3_endpoint: ""
-  s3_access_key: ""
-  s3_secret_key: ""
-  s3_bucket: "images"
+  s3_endpoint: "minio:9000"
+  s3_access_key: "minioadmin"
+  s3_secret_key: "minioadmin"
+  s3_bucket: "imageprocessor"
   s3_region: "us-east-1"
-  s3_use_ssl: true
+  s3_use_ssl: false
 
 processing:
   resize_width: 800
   resize_height: 600
   thumbnail_width: 200
   thumbnail_height: 150
-  watermark_text: "© ImageProcessor"
+  watermark_image: "static/watermark.png"
   watermark_opacity: 128
   output_quality: 95
   supported_formats:

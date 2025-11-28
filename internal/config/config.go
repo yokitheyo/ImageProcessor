@@ -69,6 +69,7 @@ type ProcessingConfig struct {
 	ThumbnailWidth   int      `mapstructure:"thumbnail_width"`
 	ThumbnailHeight  int      `mapstructure:"thumbnail_height"`
 	WatermarkText    string   `mapstructure:"watermark_text"`
+	WatermarkImage   string   `mapstructure:"watermark_image"`
 	WatermarkOpacity int      `mapstructure:"watermark_opacity"`
 	OutputQuality    int      `mapstructure:"output_quality"`
 	SupportedFormats []string `mapstructure:"supported_formats"`
@@ -91,8 +92,6 @@ func Load(path string) (*Config, error) {
 			return nil, fmt.Errorf("config.yaml not found")
 		}
 	}
-
-	setDefaults(cfg)
 
 	envPath := ".env"
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
@@ -123,54 +122,63 @@ func Load(path string) (*Config, error) {
 	return appConfig, nil
 }
 
-func setDefaults(cfg *config.Config) {
+func validateConfig(cfg *Config) error {
 	// Server
-	cfg.SetDefault("server.addr", ":8080")
-	cfg.SetDefault("server.shutdown_timeout_sec", 15)
-	cfg.SetDefault("server.read_timeout_sec", 30)
-	cfg.SetDefault("server.write_timeout_sec", 30)
-	cfg.SetDefault("server.max_upload_size_mb", 10)
+	if cfg.Server.Addr == "" {
+		return fmt.Errorf("server.addr is required")
+	}
+	if cfg.Server.ShutdownTimeoutSec <= 0 {
+		return fmt.Errorf("server.shutdown_timeout_sec must be positive")
+	}
+	if cfg.Server.ReadTimeoutSec <= 0 {
+		return fmt.Errorf("server.read_timeout_sec must be positive")
+	}
+	if cfg.Server.WriteTimeoutSec <= 0 {
+		return fmt.Errorf("server.write_timeout_sec must be positive")
+	}
+	if cfg.Server.MaxUploadSizeMB <= 0 {
+		return fmt.Errorf("server.max_upload_size_mb must be positive")
+	}
 
 	// Database
-	cfg.SetDefault("database.max_open_conns", 25)
-	cfg.SetDefault("database.max_idle_conns", 5)
-	cfg.SetDefault("database.conn_max_lifetime_sec", 1800)
-	cfg.SetDefault("database.connect_retries", 10)
-	cfg.SetDefault("database.connect_retry_delay_sec", 3)
+	if cfg.Database.DSN == "" {
+		return fmt.Errorf("database.dsn is required")
+	}
+	if cfg.Database.MaxOpenConns <= 0 {
+		return fmt.Errorf("database.max_open_conns must be positive")
+	}
+	if cfg.Database.MaxIdleConns < 0 {
+		return fmt.Errorf("database.max_idle_conns must be non-negative")
+	}
 
 	// Migrations
-	cfg.SetDefault("migrations.path", "./migrations")
+	if cfg.Migrations.Path == "" {
+		return fmt.Errorf("migrations.path is required")
+	}
 
 	// Kafka
-	cfg.SetDefault("kafka.topic", "image-processing")
-	cfg.SetDefault("kafka.group_id", "image-processor-workers")
-	cfg.SetDefault("kafka.partition", 0)
-	cfg.SetDefault("kafka.session_timeout_sec", 30)
-	cfg.SetDefault("kafka.heartbeat_interval_sec", 3)
+	if len(cfg.Kafka.Brokers) == 0 {
+		return fmt.Errorf("kafka.brokers must contain at least one broker")
+	}
+	if cfg.Kafka.Topic == "" {
+		return fmt.Errorf("kafka.topic is required")
+	}
+	if cfg.Kafka.GroupID == "" {
+		return fmt.Errorf("kafka.group_id is required")
+	}
 
 	// Storage
-	cfg.SetDefault("storage.type", "local")
-	cfg.SetDefault("storage.local_path", "./storage")
-	cfg.SetDefault("storage.original_dir", "original")
-	cfg.SetDefault("storage.processed_dir", "processed")
-
-	// Processing
-	cfg.SetDefault("processing.resize_width", 800)
-	cfg.SetDefault("processing.resize_height", 600)
-	cfg.SetDefault("processing.thumbnail_width", 200)
-	cfg.SetDefault("processing.thumbnail_height", 150)
-	cfg.SetDefault("processing.watermark_opacity", 128)
-	cfg.SetDefault("processing.output_quality", 95)
-	cfg.SetDefault("processing.supported_formats", []string{"jpg", "jpeg", "png", "gif"})
-
-	// Logging
-	cfg.SetDefault("logging.level", "info")
-}
-
-func validateConfig(cfg *Config) error {
+	if cfg.Storage.Type == "" {
+		return fmt.Errorf("storage.type is required (local|s3)")
+	}
+	if cfg.Storage.Type != "local" && cfg.Storage.Type != "s3" {
+		return fmt.Errorf("storage.type must be 'local' or 's3'")
+	}
 	if cfg.Storage.Type == "local" && cfg.Storage.LocalPath == "" {
 		return fmt.Errorf("storage.local_path is required for local storage")
 	}
+
+	// Processing
 	if cfg.Processing.ResizeWidth <= 0 {
 		return fmt.Errorf("processing.resize_width must be positive")
 	}
@@ -183,5 +191,24 @@ func validateConfig(cfg *Config) error {
 	if cfg.Processing.ThumbnailHeight <= 0 {
 		return fmt.Errorf("processing.thumbnail_height must be positive")
 	}
+	if cfg.Storage.Type == "s3" {
+		if cfg.Storage.S3Endpoint == "" {
+			return fmt.Errorf("storage.s3_endpoint is required for s3 storage")
+		}
+		if cfg.Storage.S3Bucket == "" {
+			return fmt.Errorf("storage.s3_bucket is required for s3 storage")
+		}
+		if cfg.Storage.S3AccessKey == "" || cfg.Storage.S3SecretKey == "" {
+			return fmt.Errorf("storage.s3_access_key and storage.s3_secret_key are required for s3 storage")
+		}
+	}
+
+	if len(cfg.Processing.SupportedFormats) == 0 {
+		return fmt.Errorf("processing.supported_formats must contain at least one format")
+	}
+	if cfg.Logging.Level == "" {
+		return fmt.Errorf("logging.level is required")
+	}
+
 	return nil
 }

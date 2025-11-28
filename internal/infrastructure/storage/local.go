@@ -63,7 +63,6 @@ func (s *localStorage) saveFile(ctx context.Context, dir, filename string, reade
 
 	fullPath := filepath.Join(s.basePath, dir, filename)
 
-	// Проверка существования файла (для отладки)
 	if _, err := os.Stat(fullPath); err == nil {
 		zlog.Logger.Warn().Str("path", fullPath).Msg("file already exists, will be overwritten")
 	}
@@ -110,13 +109,12 @@ func (s *localStorage) getFile(ctx context.Context, path string) (io.ReadCloser,
 	if err != nil {
 		if os.IsNotExist(err) {
 			zlog.Logger.Error().Str("path", fullPath).Msg("file not found")
-			return nil, fmt.Errorf("file not found: %s", path)
+			return nil, fmt.Errorf("%w: %s", ErrObjectNotFound, path)
 		}
 		zlog.Logger.Error().Err(err).Str("path", fullPath).Msg("failed to open file")
 		return nil, fmt.Errorf("open file %s: %w", fullPath, err)
 	}
 
-	// Логируем размер файла для отладки
 	if stat, err := file.Stat(); err == nil {
 		zlog.Logger.Info().Str("path", fullPath).Int64("size", stat.Size()).Msg("file opened successfully")
 	}

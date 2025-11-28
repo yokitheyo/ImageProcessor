@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +15,7 @@ import (
 	"github.com/yokitheyo/imageprocessor/internal/config"
 	httpHandler "github.com/yokitheyo/imageprocessor/internal/handler/http"
 	"github.com/yokitheyo/imageprocessor/internal/handler/middleware"
+	"github.com/yokitheyo/imageprocessor/internal/helpers"
 	infradatabase "github.com/yokitheyo/imageprocessor/internal/infrastructure/database"
 	"github.com/yokitheyo/imageprocessor/internal/infrastructure/kafka"
 	"github.com/yokitheyo/imageprocessor/internal/infrastructure/storage"
@@ -23,17 +23,6 @@ import (
 	"github.com/yokitheyo/imageprocessor/internal/retry"
 	"github.com/yokitheyo/imageprocessor/internal/usecase"
 )
-
-func splitAndTrim(s, sep string) []string {
-	parts := strings.Split(s, sep)
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if t := strings.TrimSpace(p); t != "" {
-			out = append(out, t)
-		}
-	}
-	return out
-}
 
 func main() {
 	zlog.Init()
@@ -43,16 +32,10 @@ func main() {
 	defer stop()
 
 	// Load config
-	configPath := "config.yaml"
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		configPath = "/app/config.yaml"
-	}
-
-	cfg, err := config.Load(configPath)
+	cfg, err := config.Load("")
 	if err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("failed to load config")
 	}
-	fmt.Printf("%+v\n", cfg.Database)
 	zlog.Logger.Info().
 		Int("max_upload_size_mb", cfg.Server.MaxUploadSizeMB).
 		Msg("Loaded server config")
@@ -69,7 +52,7 @@ func main() {
 	masterDSN := cfg.Database.DSN
 	slaves := []string{}
 	if strings.TrimSpace(cfg.Database.Slaves) != "" {
-		slaves = splitAndTrim(cfg.Database.Slaves, ",")
+		slaves = helpers.SplitAndTrim(cfg.Database.Slaves, ",")
 	}
 	dbOpts := &dbpg.Options{
 		MaxOpenConns:    cfg.Database.MaxOpenConns,
@@ -77,37 +60,7 @@ func main() {
 		ConnMaxLifetime: time.Duration(cfg.Database.ConnMaxLifetimeSec) * time.Second,
 	}
 
-	var database *dbpg.DB
-	for i := 0; i < connectRetries; i++ {
-		zlog.Logger.Info().Msgf("Database connection attempt %d/%d", i+1, connectRetries)
-
-		database, err = dbpg.New(masterDSN, slaves, dbOpts)
-		if err != nil {
-			zlog.Logger.Warn().Err(err).Msgf("dbpg.New failed on attempt %d/%d", i+1, connectRetries)
-			database = nil
-		} else if database.Master == nil {
-			err = fmt.Errorf("database.Master is nil")
-			zlog.Logger.Warn().Err(err).Msgf("nil master connection on attempt %d/%d", i+1, connectRetries)
-		} else if pingErr := database.Master.Ping(); pingErr != nil {
-			err = pingErr
-			zlog.Logger.Warn().Err(pingErr).Msgf("db ping failed on attempt %d/%d", i+1, connectRetries)
-			database.Master.Close()
-			for _, s := range database.Slaves {
-				if s != nil {
-					s.Close()
-				}
-			}
-			database = nil
-		} else {
-			zlog.Logger.Info().Msg("Database connection established successfully")
-			break
-		}
-
-		if i < connectRetries-1 {
-			time.Sleep(time.Duration(connectDelay) * time.Second)
-		}
-	}
-
+	database, err := infradatabase.ConnectWithRetries(masterDSN, slaves, dbOpts, connectRetries, connectDelay)
 	if err != nil || database == nil {
 		zlog.Logger.Fatal().Err(err).Msg("failed to connect to database after all retries")
 	}
