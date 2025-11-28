@@ -78,13 +78,14 @@ docker logs -f imageprocessor_api
 docker logs -f imageprocessor_worker
 
 # Stop services
+```
 docker-compose down
 ```
 
 ## Architecture
 
 ┌─────────┐      ┌─────────┐      ┌──────────┐
-│ Client  │─────▶│   API   │─────▶│ Postgres │
+│ Client  │────▶│   API    │────▶│ Postgres │
 └─────────┘      └─────────┘      └──────────┘
                       │
                       ▼
